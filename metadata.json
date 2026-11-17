@@ -1,0 +1,6 @@
+{
+  "name": "KeMU TVET Exam Timetable Generator",
+  "description": "Personal exam timetable builder for Kenya Methodist University TVET students with campus filtering, practical paper highlights, and collision detection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
