@@ -1,28 +1,64 @@
-export function KemuLogo() {
+import { useState } from "react";
+import { Upload } from "lucide-react";
+
+interface KemuLogoProps {
+  src?: string | null;
+  size?: "sm" | "md" | "lg";
+  onRequestUpload?: () => void;
+  className?: string;
+}
+
+export function KemuLogo({
+  src,
+  size = "md",
+  onRequestUpload,
+  className = "",
+}: KemuLogoProps) {
+  const [hasError, setHasError] = useState(false);
+  const resolvedSrc = src || "/assets/kemu-logo.png";
+
+  const dimensionClasses =
+    size === "sm"
+      ? "w-10 h-10 p-1"
+      : size === "lg"
+        ? "w-16 h-16 p-1.5"
+        : "w-12 h-12 p-1";
+
+  if (hasError) {
+    return (
+      <div
+        className={`${dimensionClasses} rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center shrink-0 ${className}`}
+      >
+        {onRequestUpload ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRequestUpload();
+            }}
+            title="Upload official KeMU logo (PNG/SVG)"
+            className="flex flex-col items-center justify-center text-[10px] font-semibold text-[#871054] hover:text-[#6D0D44]"
+          >
+            <Upload className="w-3.5 h-3.5 mb-0.5" aria-hidden="true" />
+            <span>Logo</span>
+          </button>
+        ) : (
+          <span className="text-[11px] font-bold text-[#871054]">KeMU</span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
-      className="w-11 h-11 rounded-full bg-white border-2 border-[#C9A227] flex items-center justify-center shrink-0 shadow-sm"
-      aria-hidden="true"
+      className={`${dimensionClasses} rounded-full bg-white border border-[#D6B34A] flex items-center justify-center shrink-0 overflow-hidden shadow-sm ${className}`}
     >
-      <svg
-        viewBox="0 0 40 40"
-        className="w-7 h-7"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M20 4L33 9.5V19.5C33 27.2 27.4 33.7 20 36C12.6 33.7 7 27.2 7 19.5V9.5L20 4Z"
-          fill="#4A1C6B"
-          stroke="#C9A227"
-          strokeWidth="1.75"
-        />
-        <path
-          d="M13.5 14.5C15.8 14.5 18 15.2 20 16.6C22 15.2 24.2 14.5 26.5 14.5V24.5C24.2 24.5 22 25.2 20 26.6C18 25.2 15.8 24.5 13.5 24.5V14.5Z"
-          fill="#FFFFFF"
-        />
-        <path d="M20 16.6V26.6" stroke="#C9A227" strokeWidth="1.5" />
-        <circle cx="20" cy="10.5" r="2" fill="#E8C547" />
-      </svg>
+      <img
+        src={resolvedSrc}
+        alt="Kenya Methodist University Official Crest"
+        onError={() => setHasError(true)}
+        className="w-full h-full object-contain"
+      />
     </div>
   );
 }

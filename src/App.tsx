@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,7 +9,9 @@ import {
   FlaskConical,
   MapPin,
   Printer,
+  RotateCcw,
   Search,
+  Upload,
   X,
 } from "lucide-react";
 import { KemuLogo } from "./components/KemuLogo";
@@ -26,12 +28,23 @@ type CampusFilter = "ALL" | CampusCode;
 type TypeFilter = "ALL" | "THEORY" | "PRACTICAL";
 
 const STORAGE_KEY = "kemu_tvet_selected_units_v1";
+const LOGO_STORAGE_KEY = "kemu_official_logo_data_v1";
 
 export default function App() {
   const [page, setPage] = useState<PageView>("home");
   const [campusFilter, setCampusFilter] = useState<CampusFilter>("ALL");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [customLogo, setCustomLogo] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(LOGO_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
+
   const [selectedCodes, setSelectedCodes] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -54,6 +67,34 @@ export default function App() {
       // Ignore storage write failures
     }
   }, [selectedCodes]);
+
+  function handleLogoUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCustomLogo(reader.result);
+        try {
+          localStorage.setItem(LOGO_STORAGE_KEY, reader.result);
+        } catch {
+          // Ignore storage quota errors
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  function resetCustomLogo() {
+    setCustomLogo(null);
+    try {
+      localStorage.removeItem(LOGO_STORAGE_KEY);
+    } catch {
+      // Ignore storage failures
+    }
+  }
 
   const selectedSet = useMemo(() => new Set(selectedCodes), [selectedCodes]);
 
@@ -138,21 +179,35 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7f5fa] text-[#1a202c]">
-      <header className="no-print sticky top-0 z-50 bg-gradient-to-br from-[#4A1C6B] to-[#1E3A5F] text-white border-b-[3px] border-[#C9A227] shadow-[0_2px_12px_rgba(74,28,107,0.28)]">
-        <div className="max-w-[1000px] mx-auto px-4 sm:px-5 py-3 flex items-center justify-between gap-4">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] text-[#242424]">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/svg+xml,image/jpeg"
+        onChange={handleLogoUpload}
+        className="hidden"
+        aria-label="Upload official KeMU logo file"
+      />
+
+      {/* Navigation Bar */}
+      <header className="no-print sticky top-0 z-50 bg-[#871054] text-white border-b-[3px] border-[#D6B34A] shadow-sm">
+        <div className="max-w-[1040px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => navigateTo("home")}
-            className="flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E8C547] rounded-lg"
+            className="flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D6B34A] rounded-lg min-w-0"
           >
-            <KemuLogo />
-            <div>
-              <span className="block text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap">
+            <KemuLogo
+              src={customLogo}
+              size="md"
+              onRequestUpload={() => fileInputRef.current?.click()}
+            />
+            <div className="min-w-0">
+              <span className="font-heading block text-sm sm:text-lg font-bold tracking-tight text-white truncate">
                 Kenya Methodist University
               </span>
-              <span className="block text-xs text-[#E8C547] font-medium whitespace-nowrap">
-                TVET · The Future is Here
+              <span className="block text-[11px] sm:text-xs text-[#FDF6DC] font-medium whitespace-nowrap">
+                TVET Institute · The Future is Here
               </span>
             </div>
           </button>
@@ -161,10 +216,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => navigateTo("home")}
-              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 border ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 border min-h-[40px] ${
                 page === "home"
-                  ? "bg-[#C9A227] text-[#4A1C6B] border-[#C9A227]"
-                  : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  ? "bg-[#D6B34A] text-[#242424] border-[#D6B34A]"
+                  : "bg-white/10 text-white border-white/25 hover:bg-white/20"
               }`}
             >
               Select Units
@@ -172,15 +227,15 @@ export default function App() {
             <button
               type="button"
               onClick={() => navigateTo("results")}
-              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 border ${
+              className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap shrink-0 transition-colors duration-150 border min-h-[40px] ${
                 page === "results"
-                  ? "bg-[#C9A227] text-[#4A1C6B] border-[#C9A227]"
-                  : "bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  ? "bg-[#D6B34A] text-[#242424] border-[#D6B34A]"
+                  : "bg-white/10 text-white border-white/25 hover:bg-white/20"
               }`}
             >
               My Timetable
               {selectedCodes.length > 0 && (
-                <span className="ml-1.5 font-mono tabular-nums opacity-90">
+                <span className="ml-1.5 tabular-nums opacity-95">
                   ({selectedCodes.length})
                 </span>
               )}
@@ -189,20 +244,32 @@ export default function App() {
         </div>
       </header>
 
-      <main className="print-container flex-1 w-full max-w-[1000px] mx-auto px-4 pt-6 pb-14">
+      <main className="print-container flex-1 w-full max-w-[1040px] mx-auto px-4 sm:px-6 pt-6 pb-14">
         {page === "home" ? (
           <section aria-labelledby="select-units-heading">
-            <div className="text-center mb-6">
-              <h1
-                id="select-units-heading"
-                className="text-2xl sm:text-[1.65rem] font-bold text-[#4A1C6B] tracking-tight text-balance mb-1.5"
-              >
-                Build Your Personal Exam Timetable
-              </h1>
-              <p className="text-sm sm:text-[0.95rem] text-[#64748b] max-w-[560px] mx-auto">
-                Filter by campus or paper type and select your units. The generator
-                detects time collisions and highlights practical sessions.
-              </p>
+            {/* Homepage Institutional Header with Authentic KeMU Logo */}
+            <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm p-5 sm:p-7 mb-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
+              <KemuLogo
+                src={customLogo}
+                size="lg"
+                onRequestUpload={() => fileInputRef.current?.click()}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="inline-block bg-[#EBF3FC] text-[#164A83] text-xs font-semibold px-2.5 py-1 rounded-md mb-2">
+                  End of Trimester 3, 2026 · Draft 2
+                </div>
+                <h1
+                  id="select-units-heading"
+                  className="font-heading text-xl sm:text-2xl font-bold text-[#871054] tracking-tight text-balance mb-1"
+                >
+                  Build Your Personal Exam Timetable
+                </h1>
+                <p className="text-sm text-[#6B7280] max-w-[600px]">
+                  Filter by campus or paper type and select your units. The
+                  system automatically detects time collisions and highlights
+                  practical exams.
+                </p>
+              </div>
             </div>
 
             {/* Campus Filters */}
@@ -221,10 +288,10 @@ export default function App() {
                     key={item.id}
                     type="button"
                     onClick={() => setCampusFilter(item.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap shrink-0 border transition-colors duration-150 ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap shrink-0 border transition-colors duration-150 min-h-[42px] ${
                       active
-                        ? "bg-[#4A1C6B] border-[#4A1C6B] text-white"
-                        : "bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#4A1C6B] hover:text-[#4A1C6B]"
+                        ? "bg-[#871054] border-[#871054] text-white shadow-sm"
+                        : "bg-white border-[#E5E7EB] text-[#242424] hover:border-[#871054] hover:text-[#871054]"
                     }`}
                   >
                     {item.label}
@@ -237,9 +304,21 @@ export default function App() {
             <div className="flex flex-wrap justify-center gap-2 mb-5">
               {(
                 [
-                  { id: "ALL", label: "All Papers", activeClass: "bg-[#4A1C6B] border-[#4A1C6B] text-white" },
-                  { id: "THEORY", label: "Theory Only", activeClass: "bg-[#1E3A5F] border-[#1E3A5F] text-white" },
-                  { id: "PRACTICAL", label: "Practical Only", activeClass: "bg-[#6B3A8C] border-[#6B3A8C] text-white" },
+                  {
+                    id: "ALL",
+                    label: "All Papers",
+                    activeClass: "bg-[#871054] border-[#871054] text-white",
+                  },
+                  {
+                    id: "THEORY",
+                    label: "Theory Only",
+                    activeClass: "bg-[#164A83] border-[#164A83] text-white",
+                  },
+                  {
+                    id: "PRACTICAL",
+                    label: "Practical Only",
+                    activeClass: "bg-[#D6B34A] border-[#D6B34A] text-[#242424]",
+                  },
                 ] as { id: TypeFilter; label: string; activeClass: string }[]
               ).map((item) => {
                 const active = typeFilter === item.id;
@@ -248,10 +327,10 @@ export default function App() {
                     key={item.id}
                     type="button"
                     onClick={() => setTypeFilter(item.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap shrink-0 border transition-colors duration-150 ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap shrink-0 border transition-colors duration-150 min-h-[42px] ${
                       active
-                        ? item.activeClass
-                        : "bg-white border-[#e2e8f0] text-[#64748b] hover:border-[#4A1C6B] hover:text-[#4A1C6B]"
+                        ? `${item.activeClass} shadow-sm`
+                        : "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#164A83] hover:text-[#164A83]"
                     }`}
                   >
                     {item.label}
@@ -263,7 +342,7 @@ export default function App() {
             {/* Search Input */}
             <div className="relative mb-4">
               <Search
-                className="w-4 h-4 text-[#64748b] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                className="w-4 h-4 text-[#6B7280] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
                 aria-hidden="true"
               />
               <input
@@ -272,34 +351,39 @@ export default function App() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by unit code, title, or venue..."
                 aria-label="Search units"
-                className="w-full pl-11 pr-10 py-3 bg-white border border-[#e2e8f0] rounded-xl text-sm sm:text-base text-[#1a202c] placeholder:text-[#94a3b8] focus:outline-none focus:border-[#4A1C6B] focus:ring-3 focus:ring-[#4A1C6B]/15 transition-shadow"
+                className="w-full pl-11 pr-10 py-3 bg-white border border-[#E5E7EB] rounded-xl text-sm sm:text-base text-[#242424] placeholder:text-[#6B7280] shadow-sm focus:outline-none focus:border-[#871054] focus:ring-3 focus:ring-[#871054]/15 transition-shadow"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
                   aria-label="Clear search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#64748b] hover:text-[#1a202c] rounded-md"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-[#6B7280] hover:text-[#242424] rounded-md"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Live Practical Notice */}
+            {/* Live Practical Notice (Important Notice: light gold bg, dark readable text) */}
             {selectedPracticals.length > 0 && (
               <div
                 role="status"
-                className="mb-4 rounded-xl border border-[#c4b5fd] bg-[#f3e8ff] px-4 py-3 text-sm text-[#5b21b6]"
+                className="mb-4 rounded-xl border border-[#D6B34A] bg-[#FDF6DC] px-4 py-3.5 text-sm text-[#242424] shadow-sm"
               >
-                <div className="flex items-center gap-2 font-semibold mb-1.5">
-                  <FlaskConical className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <div className="flex items-center gap-2 font-semibold mb-1.5 text-[#242424]">
+                  <FlaskConical
+                    className="w-4 h-4 shrink-0 text-[#871054]"
+                    aria-hidden="true"
+                  />
                   <span>Practical exams in your selection</span>
                 </div>
                 <ul className="list-disc pl-5 space-y-1">
                   {selectedPracticals.map((exam) => (
                     <li key={exam.code}>
-                      <span className="font-mono font-bold">{exam.code}</span>{" "}
+                      <span className="font-bold text-[#871054]">
+                        {exam.code}
+                      </span>{" "}
                       — {exam.day.split(",")[0]} at {exam.time} (
                       {CAMPUS_NAMES[exam.campus]})
                     </li>
@@ -310,7 +394,7 @@ export default function App() {
 
             {/* Actions Bar */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <div className="bg-[#4A1C6B] text-white px-4 py-2.5 rounded-lg text-sm font-semibold tabular-nums">
+              <div className="bg-[#EBF3FC] text-[#164A83] border border-[#164A83]/20 px-4 py-2.5 rounded-lg text-sm font-semibold tabular-nums">
                 {selectedCodes.length}{" "}
                 {selectedCodes.length === 1 ? "unit" : "units"} selected
               </div>
@@ -318,7 +402,7 @@ export default function App() {
                 type="button"
                 disabled={selectedCodes.length === 0}
                 onClick={() => navigateTo("results")}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#4A1C6B] text-white hover:bg-[#6B3A8C] disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors duration-150 whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#871054] text-white hover:bg-[#6D0D44] disabled:bg-[#6B7280]/50 disabled:cursor-not-allowed transition-colors duration-150 whitespace-nowrap shrink-0 min-h-[42px] shadow-sm"
               >
                 <span>Generate My Timetable</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -327,19 +411,19 @@ export default function App() {
                 type="button"
                 onClick={clearSelection}
                 disabled={selectedCodes.length === 0}
-                className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#4A1C6B] border border-[#4A1C6B] hover:bg-[#faf8fc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 whitespace-nowrap shrink-0"
+                className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#871054] border border-[#871054] hover:bg-[#FDF6DC]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 whitespace-nowrap shrink-0 min-h-[42px]"
               >
                 Clear All
               </button>
-              <span className="ml-auto text-xs text-[#64748b] tabular-nums">
+              <span className="ml-auto text-xs text-[#6B7280] tabular-nums">
                 Showing {filteredExams.length} of {EXAMS.length} papers
               </span>
             </div>
 
             {/* Unit List */}
             {filteredExams.length === 0 ? (
-              <div className="bg-white border border-[#e2e8f0] rounded-xl text-center py-12 px-5 text-[#64748b]">
-                <h2 className="text-base font-semibold text-[#1a202c] mb-1">
+              <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm text-center py-12 px-5 text-[#6B7280]">
+                <h2 className="font-heading text-base font-semibold text-[#242424] mb-1">
                   No units found
                 </h2>
                 <p className="text-sm mb-4">
@@ -352,7 +436,7 @@ export default function App() {
                     setTypeFilter("ALL");
                     setSearchQuery("");
                   }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#4A1C6B] text-white hover:bg-[#6B3A8C] transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#871054] text-white hover:bg-[#6D0D44] transition-colors"
                 >
                   Reset Filters
                 </button>
@@ -364,10 +448,10 @@ export default function App() {
                   return (
                     <label
                       key={exam.code}
-                      className={`flex items-start gap-3.5 p-4 rounded-xl border cursor-pointer transition-colors duration-150 ${
+                      className={`flex items-start gap-3.5 p-4 rounded-xl border shadow-sm cursor-pointer transition-colors duration-150 ${
                         isSelected
-                          ? "bg-[#fef9e7] border-[#C9A227]"
-                          : "bg-white border-[#e2e8f0] hover:border-[#6B3A8C]/60 hover:bg-[#faf8fc]"
+                          ? "bg-[#FDF6DC] border-[#D6B34A]"
+                          : "bg-white border-[#E5E7EB] hover:border-[#871054]/50"
                       }`}
                     >
                       <span className="relative flex items-center justify-center mt-0.5 shrink-0">
@@ -380,8 +464,8 @@ export default function App() {
                         <span
                           className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                             isSelected
-                              ? "bg-[#4A1C6B] border-[#4A1C6B] text-white"
-                              : "bg-white border-slate-300"
+                              ? "bg-[#871054] border-[#871054] text-white"
+                              : "bg-white border-[#6B7280]/50"
                           }`}
                         >
                           {isSelected && (
@@ -392,44 +476,53 @@ export default function App() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="font-mono font-bold text-sm sm:text-[0.95rem] text-[#4A1C6B]">
+                          <span className="font-bold text-sm sm:text-[0.95rem] text-[#871054]">
                             {exam.code}
                           </span>
-                          <span className="text-slate-300" aria-hidden="true">
+                          <span className="text-[#E5E7EB]" aria-hidden="true">
                             ·
                           </span>
-                          <span
-                            className={`text-xs font-semibold ${
-                              exam.practical
-                                ? "text-[#6B3A8C]"
-                                : "text-[#0369a1]"
-                            }`}
-                          >
-                            {exam.practical ? "Practical" : "Theory"}
-                          </span>
-                          <span className="text-slate-300" aria-hidden="true">
+                          {exam.practical ? (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#FDF6DC] text-[#242424] border border-[#D6B34A]">
+                              Practical
+                            </span>
+                          ) : (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#EBF3FC] text-[#164A83]">
+                              Theory
+                            </span>
+                          )}
+                          <span className="text-[#E5E7EB]" aria-hidden="true">
                             ·
                           </span>
-                          <span className="text-xs font-medium text-[#92400e]">
+                          <span className="text-xs font-medium text-[#164A83]">
                             {CAMPUS_NAMES[exam.campus]} ({exam.campus})
                           </span>
                         </div>
 
-                        <div className="text-sm sm:text-[0.95rem] font-medium text-[#1a202c] mt-0.5">
+                        <div className="text-sm sm:text-[0.95rem] font-semibold text-[#242424] mt-1">
                           {exam.title}
                         </div>
 
-                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#64748b]">
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6B7280]">
                           <span className="inline-flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                            <Calendar
+                              className="w-3.5 h-3.5 text-[#164A83]"
+                              aria-hidden="true"
+                            />
                             <span>{exam.day.split(",")[0]}</span>
                           </span>
                           <span className="inline-flex items-center gap-1.5 tabular-nums">
-                            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                            <Clock
+                              className="w-3.5 h-3.5 text-[#164A83]"
+                              aria-hidden="true"
+                            />
                             <span>{exam.time}</span>
                           </span>
                           <span className="inline-flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                            <MapPin
+                              className="w-3.5 h-3.5 text-[#164A83]"
+                              aria-hidden="true"
+                            />
                             <span>
                               {exam.campus} – {exam.venue}
                             </span>
@@ -444,31 +537,42 @@ export default function App() {
           </section>
         ) : (
           <section aria-labelledby="timetable-heading">
-            <div className="mb-5">
-              <h1
-                id="timetable-heading"
-                className="text-xl sm:text-2xl font-bold text-[#4A1C6B] tracking-tight"
-              >
-                Your Personal Exam Timetable
-              </h1>
-              <p className="text-sm text-[#64748b] mt-0.5">
-                End of Trimester 3, 2026 · Draft 2
-              </p>
+            {/* Official Timetable & Printable Report Header */}
+            <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm p-5 mb-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              <KemuLogo
+                src={customLogo}
+                size="lg"
+                onRequestUpload={() => fileInputRef.current?.click()}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-[#164A83] mb-0.5">
+                  Kenya Methodist University · TVET Institute
+                </p>
+                <h1
+                  id="timetable-heading"
+                  className="font-heading text-xl sm:text-2xl font-bold text-[#871054] tracking-tight"
+                >
+                  Your Personal Exam Timetable
+                </h1>
+                <p className="text-sm text-[#6B7280] mt-0.5">
+                  End of Trimester 3, 2026 · Draft 2
+                </p>
+              </div>
             </div>
 
             {selectedExams.length === 0 ? (
-              <div className="bg-white border border-[#e2e8f0] rounded-xl text-center py-14 px-6">
-                <h2 className="text-lg font-semibold text-[#1a202c] mb-1.5">
+              <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm text-center py-14 px-6">
+                <h2 className="font-heading text-lg font-semibold text-[#242424] mb-1.5">
                   No units selected yet
                 </h2>
-                <p className="text-sm text-[#64748b] max-w-md mx-auto mb-5">
+                <p className="text-sm text-[#6B7280] max-w-md mx-auto mb-5">
                   Select your registered units from the exam schedule to generate
                   your personal timetable and check for any time collisions.
                 </p>
                 <button
                   type="button"
                   onClick={() => navigateTo("home")}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#4A1C6B] text-white hover:bg-[#6B3A8C] transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#871054] text-white hover:bg-[#6D0D44] transition-colors min-h-[42px]"
                 >
                   <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                   <span>Select Units</span>
@@ -478,65 +582,68 @@ export default function App() {
               <>
                 {/* Summary Strip */}
                 <div className="grid grid-cols-3 gap-3 mb-5">
-                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#e2e8f0] text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-[#4A1C6B] tabular-nums">
+                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#E5E7EB] shadow-sm text-center">
+                    <div className="font-heading text-xl sm:text-2xl font-bold text-[#871054] tabular-nums">
                       {selectedExams.length}
                     </div>
-                    <div className="text-xs text-[#64748b] mt-0.5">
+                    <div className="text-xs text-[#6B7280] mt-0.5">
                       Total Exams
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#e2e8f0] text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-[#6B3A8C] tabular-nums">
+                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#E5E7EB] shadow-sm text-center">
+                    <div className="font-heading text-xl sm:text-2xl font-bold text-[#164A83] tabular-nums">
                       {selectedPracticals.length}
                     </div>
-                    <div className="text-xs text-[#64748b] mt-0.5">
+                    <div className="text-xs text-[#6B7280] mt-0.5">
                       Practical Papers
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#e2e8f0] text-center">
-                    <div className="text-xl sm:text-2xl font-bold text-[#c05621] tabular-nums">
+                  <div className="bg-white rounded-xl p-3.5 sm:p-4 border border-[#E5E7EB] shadow-sm text-center">
+                    <div className="font-heading text-xl sm:text-2xl font-bold text-[#871054] tabular-nums">
                       {clashGroups.length}
                     </div>
-                    <div className="text-xs text-[#64748b] mt-0.5">
+                    <div className="text-xs text-[#6B7280] mt-0.5">
                       Time Collisions
                     </div>
                   </div>
                 </div>
 
-                {/* Practical Exam Alert */}
+                {/* Practical Exam Important Notice */}
                 {selectedPracticals.length > 0 && (
-                  <div className="mb-4 rounded-xl border border-[#c4b5fd] bg-[#f3e8ff] p-4 text-sm text-[#5b21b6]">
-                    <div className="flex items-center gap-2 font-bold mb-1.5">
-                      <FlaskConical className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  <div className="mb-4 rounded-xl border border-[#D6B34A] bg-[#FDF6DC] p-4 text-sm text-[#242424] shadow-sm">
+                    <div className="flex items-center gap-2 font-bold mb-1.5 text-[#242424]">
+                      <FlaskConical
+                        className="w-4 h-4 shrink-0 text-[#871054]"
+                        aria-hidden="true"
+                      />
                       <span>You have Practical Exam(s)</span>
                     </div>
                     <ul className="list-disc pl-5 space-y-1">
                       {selectedPracticals.map((exam) => (
                         <li key={exam.code}>
-                          <span className="font-mono font-bold">
+                          <span className="font-bold text-[#871054]">
                             {exam.code}
                           </span>{" "}
                           – {exam.day.split(",")[0]} at{" "}
-                          <strong className="tabular-nums">{exam.time}</strong> (
-                          {CAMPUS_NAMES[exam.campus]}, {exam.venue})
+                          <strong className="tabular-nums">{exam.time}</strong>{" "}
+                          ({CAMPUS_NAMES[exam.campus]}, {exam.venue})
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-xs text-[#5b21b6]/90">
+                    <p className="mt-2 text-xs text-[#6B7280]">
                       Make sure you are prepared and seated early for these
                       practical lab sessions.
                     </p>
                   </div>
                 )}
 
-                {/* Colliding Units Alert */}
+                {/* Colliding Units Important Notice */}
                 {clashGroups.length > 0 && (
                   <div
                     role="alert"
-                    className="mb-5 rounded-xl border border-amber-500 bg-amber-50 p-4 text-sm text-[#92400e]"
+                    className="mb-5 rounded-xl border-2 border-[#D6B34A] bg-[#FDF6DC] p-4 text-sm text-[#242424] shadow-sm"
                   >
-                    <div className="flex items-center gap-2 font-bold mb-1.5">
+                    <div className="flex items-center gap-2 font-bold mb-1.5 text-[#871054]">
                       <AlertTriangle
                         className="w-4 h-4 shrink-0"
                         aria-hidden="true"
@@ -551,14 +658,16 @@ export default function App() {
                           {group.map((exam, idx) => (
                             <span key={exam.code}>
                               {idx > 0 && " & "}
-                              <strong className="font-mono">{exam.code}</strong>{" "}
+                              <strong className="text-[#871054]">
+                                {exam.code}
+                              </strong>{" "}
                               ({CAMPUS_NAMES[exam.campus]})
                             </span>
                           ))}
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-xs text-[#92400e]/90">
+                    <p className="mt-2 text-xs text-[#6B7280]">
                       These exams are scheduled at the same time. If they are on
                       different campuses, confirm which campus you belong to.
                     </p>
@@ -571,12 +680,12 @@ export default function App() {
                     const [dayName, datePart] = day.split(",");
                     return (
                       <div key={day}>
-                        <div className="flex flex-wrap items-center gap-2.5 pb-2 mb-3 border-b-2 border-[#C9A227]">
-                          <h2 className="text-lg font-bold text-[#4A1C6B]">
+                        <div className="flex flex-wrap items-center gap-2.5 pb-2 mb-3 border-b-2 border-[#D6B34A]">
+                          <h2 className="font-heading text-lg font-bold text-[#871054]">
                             {dayName}
                           </h2>
                           {datePart && (
-                            <span className="bg-[#4A1C6B] text-white text-xs font-semibold px-2.5 py-1 rounded-md">
+                            <span className="bg-[#871054] text-white text-xs font-semibold px-2.5 py-1 rounded-md">
                               {datePart.trim()}
                             </span>
                           )}
@@ -588,87 +697,71 @@ export default function App() {
                             return (
                               <article
                                 key={exam.code}
-                                className={`print-card rounded-xl p-4 border transition-colors ${
+                                className={`print-card rounded-xl p-4 border shadow-sm transition-colors ${
                                   isClash
-                                    ? "bg-amber-50/75 border-amber-500"
-                                    : exam.practical
-                                      ? "bg-[#faf6ff] border-[#6B3A8C]/35"
-                                      : "bg-white border-[#e2e8f0]"
+                                    ? "bg-[#FDF6DC] border-[#D6B34A]"
+                                    : "bg-white border-[#E5E7EB]"
                                 }`}
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                  <span className="font-mono text-xs sm:text-sm font-semibold text-[#4A1C6B] bg-[#f3e8ff] px-2.5 py-1 rounded-md tabular-nums">
+                                  <span className="text-xs sm:text-sm font-semibold text-[#164A83] bg-[#EBF3FC] px-2.5 py-1 rounded-md tabular-nums">
                                     {exam.time}
                                   </span>
 
                                   <div className="flex flex-wrap items-center gap-2 text-xs">
                                     {isClash && (
-                                      <>
-                                        <span className="inline-flex items-center gap-1 font-semibold text-amber-800">
-                                          <AlertTriangle
-                                            className="w-3.5 h-3.5"
-                                            aria-hidden="true"
-                                          />
-                                          Time Collision
-                                        </span>
-                                        <span
-                                          className="text-slate-300"
+                                      <span className="inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded bg-[#871054] text-white">
+                                        <AlertTriangle
+                                          className="w-3.5 h-3.5"
                                           aria-hidden="true"
-                                        >
-                                          ·
-                                        </span>
-                                      </>
+                                        />
+                                        Time Collision
+                                      </span>
                                     )}
-                                    <span
-                                      className={`font-semibold ${
-                                        exam.practical
-                                          ? "text-[#6B3A8C]"
-                                          : "text-[#0369a1]"
-                                      }`}
-                                    >
-                                      {exam.practical ? "Practical" : "Theory"}
-                                    </span>
-                                    <span
-                                      className="text-slate-300"
-                                      aria-hidden="true"
-                                    >
-                                      ·
-                                    </span>
-                                    <span className="font-medium text-[#92400e]">
+                                    {exam.practical ? (
+                                      <span className="font-semibold px-2 py-0.5 rounded bg-[#FDF6DC] text-[#242424] border border-[#D6B34A]">
+                                        Practical
+                                      </span>
+                                    ) : (
+                                      <span className="font-semibold px-2 py-0.5 rounded bg-[#EBF3FC] text-[#164A83]">
+                                        Theory
+                                      </span>
+                                    )}
+                                    <span className="font-medium text-[#6B7280]">
                                       {CAMPUS_NAMES[exam.campus]}
                                     </span>
                                   </div>
                                 </div>
 
-                                <div className="font-mono font-bold text-sm sm:text-base text-[#4A1C6B]">
+                                <div className="font-bold text-sm sm:text-base text-[#871054]">
                                   {exam.code}
                                 </div>
-                                <h3 className="text-sm sm:text-[0.95rem] font-semibold text-[#1a202c] mt-0.5">
+                                <h3 className="font-heading text-sm sm:text-[0.95rem] font-semibold text-[#242424] mt-0.5">
                                   {exam.title}
                                 </h3>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-[#e2e8f0] pt-3 mt-3 text-sm">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border-t border-[#E5E7EB] pt-3 mt-3 text-sm">
                                   <div>
-                                    <span className="block text-[0.7rem] font-semibold text-[#64748b] tracking-wide mb-0.5">
+                                    <span className="block text-[0.7rem] font-semibold text-[#164A83] tracking-wide mb-0.5">
                                       Campus
                                     </span>
-                                    <span className="text-[#1a202c]">
+                                    <span className="text-[#242424]">
                                       {CAMPUS_NAMES[exam.campus]} ({exam.campus})
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="block text-[0.7rem] font-semibold text-[#64748b] tracking-wide mb-0.5">
+                                    <span className="block text-[0.7rem] font-semibold text-[#164A83] tracking-wide mb-0.5">
                                       Venue
                                     </span>
-                                    <span className="text-[#1a202c]">
+                                    <span className="text-[#242424]">
                                       {exam.venue}
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="block text-[0.7rem] font-semibold text-[#64748b] tracking-wide mb-0.5">
+                                    <span className="block text-[0.7rem] font-semibold text-[#164A83] tracking-wide mb-0.5">
                                       Invigilator
                                     </span>
-                                    <span className="text-[#1a202c]">
+                                    <span className="text-[#242424]">
                                       {exam.invigilator}
                                     </span>
                                   </div>
@@ -687,7 +780,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo("home")}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#4A1C6B] border border-[#4A1C6B] hover:bg-[#faf8fc] transition-colors whitespace-nowrap shrink-0"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-white text-[#871054] border border-[#871054] hover:bg-[#FDF6DC]/50 transition-colors whitespace-nowrap shrink-0 min-h-[42px]"
                   >
                     <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                     <span>Edit Units</span>
@@ -695,7 +788,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#C9A227] text-[#4A1C6B] hover:bg-[#E8C547] transition-colors whitespace-nowrap shrink-0"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-[#871054] text-white hover:bg-[#6D0D44] transition-colors whitespace-nowrap shrink-0 min-h-[42px] shadow-sm"
                   >
                     <Printer className="w-4 h-4" aria-hidden="true" />
                     <span>Print Timetable</span>
@@ -707,13 +800,37 @@ export default function App() {
         )}
       </main>
 
-      <footer className="no-print text-center py-6 px-5 text-xs border-t-[3px] border-[#C9A227] bg-gradient-to-br from-[#4A1C6B] to-[#1E3A5F] text-white/85">
-        <strong className="text-[#E8C547] font-semibold">
-          Kenya Methodist University
-        </strong>{" "}
-        – TVET Institute
-        <br />
-        End of Trimester 3, 2026 Exam Timetable (Draft 2) · The Future is Here
+      <footer className="no-print text-center py-6 px-5 text-xs border-t-[3px] border-[#D6B34A] bg-[#871054] text-white/90">
+        <div className="max-w-[1040px] mx-auto flex flex-col items-center gap-2">
+          <div>
+            <strong className="text-[#FDF6DC] font-semibold">
+              Kenya Methodist University
+            </strong>{" "}
+            – TVET Institute
+            <br />
+            End of Trimester 3, 2026 Exam Timetable (Draft 2) · Laborare est Orare
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 text-[11px] text-[#FDF6DC] hover:underline"
+            >
+              <Upload className="w-3 h-3" aria-hidden="true" />
+              <span>Upload Official Logo (PNG/SVG)</span>
+            </button>
+            {customLogo && (
+              <button
+                type="button"
+                onClick={resetCustomLogo}
+                className="inline-flex items-center gap-1 text-[11px] text-white/80 hover:text-white hover:underline"
+              >
+                <RotateCcw className="w-3 h-3" aria-hidden="true" />
+                <span>Restore Default Crest</span>
+              </button>
+            )}
+          </div>
+        </div>
       </footer>
     </div>
   );

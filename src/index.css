@@ -1,25 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --color-kemu-purple: #4A1C6B;
-  --color-kemu-purple-light: #6B3A8C;
-  --color-kemu-gold: #C9A227;
-  --color-kemu-gold-light: #E8C547;
-  --color-kemu-blue: #1E3A5F;
-  --color-kemu-bg: #f7f5fa;
-  --color-kemu-highlight: #fef9e7;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-heading: "Poppins", system-ui, -apple-system, sans-serif;
+  --color-kemu-maroon: #871054;
+  --color-kemu-maroon-dark: #6D0D44;
+  --color-kemu-gold: #D6B34A;
+  --color-kemu-gold-light: #FDF6DC;
+  --color-kemu-blue: #164A83;
+  --color-kemu-blue-light: #EBF3FC;
+  --color-kemu-bg: #F8F9FA;
+  --color-kemu-text: #242424;
+  --color-kemu-muted: #6B7280;
+  --color-kemu-border: #E5E7EB;
 }
 
 @layer base {
   body {
     font-family: var(--font-sans);
-    background-color: #f7f5fa;
-    color: #1a202c;
+    background-color: #F8F9FA;
+    color: #242424;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: var(--font-heading);
   }
 }
 
@@ -28,8 +35,18 @@
     display: none !important;
   }
 
+  .print-only {
+    display: block !important;
+  }
+
+  body,
+  body * {
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
   body {
-    background-color: #ffffff !important;
+    background-color: #FFFFFF !important;
+    color: #242424 !important;
   }
 
   .print-container {
